@@ -3,7 +3,6 @@ from datetime import datetime
 
 from sqlalchemy.orm import relationship
 
-from sqlalchemy.orm import relationship
 from db.base_class import Base
 
 

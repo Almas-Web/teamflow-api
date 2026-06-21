@@ -15,4 +15,5 @@ class User(Base):
     
     # Relationships
     workspaces = relationship("Workspace", back_populates="owner")
+    tasks = relationship("Task", back_populates="assignee")
     notifications = relationship("Notification", back_populates="user")

@@ -21,5 +21,5 @@ class Task(Base):
 
     # Relationships
     project = relationship("Project", back_populates="tasks")
-    assignee = relationship("User")
+    assignee = relationship("User", back_populates="tasks")
     comments = relationship("TaskComment", back_populates="task")

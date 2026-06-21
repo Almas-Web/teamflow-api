@@ -1,5 +1,15 @@
 from core.config import settings
 from db.base import Base
+from db.models import (
+    user,
+    workspace,
+    workspace_member,
+    project,
+    task,
+    invitation,
+    task_comment,
+    notification,
+)
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -11,6 +21,7 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
