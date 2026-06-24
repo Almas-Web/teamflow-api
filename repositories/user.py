@@ -19,81 +19,88 @@ class UserRepository:
     def __init__(self, db: Session):
         self.db = db
 
+    # ---------------- GET USER BY EMAIL ----------------
     def get_user_by_email(self, email: str) -> Optional[User]:
         return self.db.query(User).filter(
             func.lower(User.email) == func.lower(email)
         ).first()
 
+    # ---------------- GET USER BY ID ----------------
     def get_user_by_id(self, id: int) -> Optional[User]:
         return self.db.query(User).filter(
             User.id == id,
             User.is_active == True
         ).first()
 
+    # ---------------- CREATE USER ----------------
     def create_user(
         self,
         name: str,
         email: str,
         password: str,
-        is_active: bool = True,
-        is_superuser: bool = False
+        is_active: bool = True
     ) -> User:
 
-        _hashed_password = PasswordManager.get_password_hash(password=password)
+        hashed_password = PasswordManager.get_password_hash(password)
 
         db_user = User(
             name=name,
             email=email,
-            password=_hashed_password,
+            password=hashed_password,
             is_active=is_active
         )
 
-        self.db.add(db_user)
-
         try:
+            self.db.add(db_user)
             self.db.commit()
             self.db.refresh(db_user)
+
         except IntegrityError:
             self.db.rollback()
-            raise HTTPException(status_code=400, detail="Email already registered")
+            raise HTTPException(
+                status_code=400,
+                detail="Email already registered"
+            )
 
         return db_user
 
-    def get_user_for_token(self, email: str, password: str) -> Optional[User]:
-        user = self.get_user_by_email(email=email)
+    # ---------------- LOGIN CHECK ----------------
+    def get_user_for_token(self, email: str, password: str) -> User:
 
-        if not user:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
+        user = self.get_user_by_email(email)
 
-        is_password_matched = PasswordManager.verify_password(
-            password, user.password
-        )
-
-        if not is_password_matched:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
+        if not user or not PasswordManager.verify_password(password, user.password):
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid credentials"
+            )
 
         return user
 
+    # ---------------- CURRENT USER ----------------
     @staticmethod
     def get_current_user(
         token: str = Depends(oauth2_scheme),
         db: Session = Depends(get_db)
-    ):
+    ) -> User:
+
         payload = verify_token(token)
 
-        if payload is None:
+        if not payload:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
             )
 
+        user_id = payload.get("sub")
+
         user = db.query(User).filter(
-            User.id == payload.get("sub")
+            User.id == int(user_id)
         ).first()
 
-        if user is None:
+        if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=404,
                 detail="User not found"
             )
 

@@ -7,11 +7,11 @@ from db.models.user import User
 
 def start_application():
     app = FastAPI(
-        title=settings.PROJECT_NAME,
+        title=settings.PROJECT_NAME,                       
         version=settings.PROJECT_VERSION
     )
     return app
-
+ 
 
 app = start_application()
 

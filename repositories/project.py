@@ -4,17 +4,16 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 
 from db.models.project import Project
-from schemas.project import (
-    ProjectCreate,
-    ProjectUpdate,
-)
+from schemas.project import ProjectCreate, ProjectUpdate, ProjectRead
 
 
 class ProjectRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    # Helper (REUSABLE)
+    # ------------------------
+    # HELPER
+    # ------------------------
     def get_project_or_404(self, project_id: int) -> Project:
         project = (
             self.db.query(Project)
@@ -30,11 +29,10 @@ class ProjectRepository:
 
         return project
 
+    # ------------------------
     # CREATE
-    def create_project(
-        self,
-        project: ProjectCreate
-    ) -> Project:
+    # ------------------------
+    def create_project(self, project: ProjectCreate) -> ProjectRead:
 
         db_project = Project(
             workspace_id=project.workspace_id,
@@ -54,17 +52,15 @@ class ProjectRepository:
                 detail="Something went wrong!"
             )
 
-        return db_project
+        # ✅ ORM -> Pydantic conversion
+        return ProjectRead.model_validate(db_project)
 
+    # ------------------------
     # LIST
-    def get_projects(
-        self,
-        skip: int = 0,
-        limit: int = 100
-    ):
-        total_count = (
-            self.db.query(func.count(Project.id)).scalar()
-        )
+    # ------------------------
+    def get_projects(self, skip: int = 0, limit: int = 100):
+
+        total_count = self.db.query(func.count(Project.id)).scalar()
 
         projects = (
             self.db.query(Project)
@@ -77,23 +73,25 @@ class ProjectRepository:
             "total_count": total_count,
             "skip": skip,
             "limit": limit,
-            "data": projects
+            "data": [ProjectRead.model_validate(p) for p in projects]
         }
 
+    # ------------------------
     # GET ONE
-    def get_project_by_id(
-        self,
-        project_id: int
-    ) -> Project:
+    # ------------------------
+    def get_project_by_id(self, project_id: int) -> ProjectRead:
 
-        return self.get_project_or_404(project_id)
+        project = self.get_project_or_404(project_id)
+        return ProjectRead.model_validate(project)
 
+    # ------------------------
     # UPDATE
+    # ------------------------
     def update_project(
         self,
         project_id: int,
         payload: ProjectUpdate
-    ) -> Project:
+    ) -> ProjectRead:
 
         project = self.get_project_or_404(project_id)
 
@@ -105,13 +103,12 @@ class ProjectRepository:
         self.db.commit()
         self.db.refresh(project)
 
-        return project
+        return ProjectRead.model_validate(project)
 
+    # ------------------------
     # DELETE
-    def delete_project(
-        self,
-        project_id: int
-    ):
+    # ------------------------
+    def delete_project(self, project_id: int):
 
         project = self.get_project_or_404(project_id)
 

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -8,7 +9,7 @@ class WorkspaceCreate(BaseModel):
 
 
 class WorkspaceUpdate(BaseModel):
-    name: str | None = None
+    name: Optional[str] = None
 
 
 class WorkspaceRead(BaseModel):
@@ -17,6 +18,4 @@ class WorkspaceRead(BaseModel):
     owner_id: int
     created_at: datetime
 
-    model_config = ConfigDict(
-        from_attributes=True
-    )
+    model_config = ConfigDict(from_attributes=True)

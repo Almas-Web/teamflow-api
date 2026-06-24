@@ -1,49 +1,61 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel
 
 from db.session import get_db
 from repositories.user import UserRepository
-from schemas.user import UserCreate, UserView
-from schemas.user import Token
-from utils.jwt_manager import create_access_token, create_refresh_token, verify_token
+from schemas.user import UserCreate, UserView, Token
+from utils.jwt_manager import (
+    create_access_token,
+    create_refresh_token,
+    verify_token
+)
 
 router = APIRouter()
 
 
+# ---------------- REFRESH SCHEMA ----------------
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+# ---------------- USER REPO ----------------
 def get_user_repo(db: Session) -> UserRepository:
     return UserRepository(db)
 
 
-@router.post("", response_model=UserView)
+# ---------------- REGISTER USER ----------------
+@router.post("/", response_model=UserView, status_code=status.HTTP_201_CREATED)
 def create_user(
     payload: UserCreate,
     db: Session = Depends(get_db)
 ):
-    user_repo = get_user_repo(db=db)
+    user_repo = get_user_repo(db)
 
-    existing_user = user_repo.get_user_by_email(email=payload.email)
+    existing_user = user_repo.get_user_by_email(payload.email)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
 
-    new_user = user_repo.create_user(
+    return user_repo.create_user(
         name=payload.name,
         email=payload.email,
         password=payload.password
     )
 
-    return new_user
 
-
+# ---------------- LOGIN ----------------
 @router.post("/token", response_model=Token)
-async def login_for_access_token(
+def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    user = UserRepository(db=db).get_user_for_token(
+    user_repo = UserRepository(db)
+
+    user = user_repo.get_user_for_token(
         email=form_data.username,
         password=form_data.password
     )
@@ -53,37 +65,40 @@ async def login_for_access_token(
 
     return {
         "access_token": access_token,
-        "refresh_token": refresh_token
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
     }
 
 
+# ---------------- REFRESH TOKEN ----------------
 @router.post("/refresh", response_model=Token)
-async def refresh_access_token(
-    refresh_token: str,
+def refresh_access_token(
+    payload: RefreshRequest,
     db: Session = Depends(get_db)
 ):
-    payload = verify_token(refresh_token)
+    token_data = verify_token(payload.refresh_token)
 
-    if payload is None:
+    if not token_data:
         raise HTTPException(
             status_code=401,
             detail="Invalid refresh token"
         )
 
-    payload_subject = payload.get("sub")
+    user_id = int(token_data.get("sub"))
 
-    user = UserRepository(db=db).get_user_by_id(id=payload_subject)
+    user = UserRepository(db).get_user_by_id(user_id)
 
-    if user is None:
+    if not user:
         raise HTTPException(
             status_code=404,
             detail="User not found"
         )
 
-    access_token = create_access_token(data={"sub": str(user.id)})
+    new_access_token = create_access_token(data={"sub": str(user.id)})
     new_refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
     return {
-        "access_token": access_token,
-        "refresh_token": new_refresh_token
+        "access_token": new_access_token,
+        "refresh_token": new_refresh_token,
+        "token_type": "bearer"
     }
