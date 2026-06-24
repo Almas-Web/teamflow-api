@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status,Form
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -73,10 +73,10 @@ def login_for_access_token(
 # ---------------- REFRESH TOKEN ----------------
 @router.post("/refresh", response_model=Token)
 def refresh_access_token(
-    payload: RefreshRequest,
+    refresh_token: str = Form(default=""),
     db: Session = Depends(get_db)
 ):
-    token_data = verify_token(payload.refresh_token)
+    token_data = verify_token(refresh_token)
 
     if not token_data:
         raise HTTPException(

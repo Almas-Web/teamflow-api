@@ -5,7 +5,7 @@ def unique_email(prefix):
     return f"{prefix}_{int(time.time() * 1000)}@gmail.com"
 
 
-# ---------------- REGISTER ----------------
+# ---------------- REGISTER 
 def test_register_user(client):
     email = unique_email("almas")
 
@@ -19,7 +19,7 @@ def test_register_user(client):
     assert response.json()["email"] == email
 
 
-# ---------------- LOGIN ----------------
+# ---------------- LOGIN 
 def test_login_user(client):
     email = unique_email("login")
 
@@ -38,7 +38,7 @@ def test_login_user(client):
     assert "access_token" in response.json()
 
 
-# ---------------- PROTECTED ----------------
+# ---------------- PROTECTED
 def test_protected_route(client):
     email = unique_email("protected")
 
