@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, status,Form
+from fastapi import APIRouter, HTTPException, Depends, status, Form
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -11,8 +11,11 @@ from utils.jwt_manager import (
     create_refresh_token,
     verify_token
 )
+from utils.email_manager.manager import provide_email_sender
 
 router = APIRouter()
+
+email_sender = provide_email_sender()
 
 
 # ---------------- REFRESH SCHEMA ----------------
@@ -40,11 +43,20 @@ def create_user(
             detail="Email already registered"
         )
 
-    return user_repo.create_user(
+    new_user = user_repo.create_user(
         name=payload.name,
         email=payload.email,
         password=payload.password
     )
+
+    email_sender.send(
+         to=payload.email,
+         subject="Welcome to TeamFlow!",
+         template="welcome.html",
+         context={"username": payload.email.split("@")[0]}
+    )
+
+    return new_user
 
 
 # ---------------- LOGIN ----------------
