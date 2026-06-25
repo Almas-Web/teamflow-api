@@ -1,16 +1,15 @@
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pytest
 from fastapi.testclient import TestClient
-
-from main import app
-from db.session import get_db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+# App import
+from main import app
+from db.session import get_db
 from db.base_class import Base
 
-#  TEST DATABASE (IMPORTANT)
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 
 engine = create_engine(
@@ -18,56 +17,38 @@ engine = create_engine(
     connect_args={"check_same_thread": False}
 )
 
-TestingSessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Create test DB
-Base.metadata.create_all(bind=engine)
+# Fixture to clear and recreate DB before every test
+@pytest.fixture(scope="function", autouse=True)
+def setup_db():
+    Base.metadata.drop_all(bind=engine)  # Delete old data
+    Base.metadata.create_all(bind=engine)  # Recreate tables
+    yield
+    Base.metadata.drop_all(bind=engine)  # Clean up after test
 
-
-# override DB dependency
 def override_get_db():
+    db = TestingSessionLocal()
     try:
-        db = TestingSessionLocal()
         yield db
     finally:
         db.close()
 
-
 app.dependency_overrides[get_db] = override_get_db
-
 
 @pytest.fixture
 def client():
     return TestClient(app)
 
-
+# NEW FIXTURE: Create a workspace automatically for tests
 @pytest.fixture
-def test_user(client):
-    """create user for login test"""
-    response = client.post("/users", json={
-        "name": "Test User",
-        "email": "test@gmail.com",
-        "password": "123456"
-    })
+def workspace(client, token):
+    headers = {"Authorization": f"Bearer {token}"}
+    response = client.post("/workspaces", json={"name": "Test Workspace"}, headers=headers)
     return response.json()
 
-
+# UPDATE: Use 'workspace' fixture to get the correct ID
 @pytest.fixture
-def token(client):
-    """login and return token"""
-    client.post("/users", json={
-        "name": "Test User2",
-        "email": "test2@gmail.com",
-        "password": "123456"
-    })
-
-    response = client.post("/users/token", data={
-        "username": "test2@gmail.com",
-        "password": "123456"
-    })
-
-    return response.json()["access_token"]
+def authorized_client(client, token):
+    client.headers = {"Authorization": f"Bearer {token}"}
+    return client

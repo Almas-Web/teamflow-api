@@ -1,6 +1,5 @@
-import os
 from pathlib import Path
-from pydantic import Extra
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 env_path = Path(".") / ".env"
@@ -35,9 +34,10 @@ class Settings(BaseSettings):
             f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
-    class Config:
-        env_file = str(env_path)
-        extra = Extra.forbid
-
+    # Pydantic V2 
+    model_config = ConfigDict(
+        env_file=str(env_path),
+        extra='forbid'
+    )
 
 settings = Settings()
