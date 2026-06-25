@@ -4,6 +4,7 @@ from core.config import settings
 from apis.base import api_router
 from repositories.user import UserRepository
 from db.models.user import User
+from tasks.email_tasks import send_email_task
 
 # List of allowed origins, you can add specific domains or '*' for all origins
 origins = [
@@ -33,8 +34,18 @@ def start_application():
 app = start_application()
 
 app.include_router(api_router)
+"""
+@app.get("/test-email")
+def test_email():
+    send_email_task.delay(
+        to="your-email@example.com", 
+        subject="Celery Test", 
+        template="welcome.html", 
+        context={"name": "Tester"}
+    )
+    return {"message": "Email task has been sent to the worker!"}
 
-
+"""
 @app.get("/")
 def home():
     return {"msg": "Hello World"}

@@ -1,7 +1,7 @@
 version: "3.9"
 
 services:
-  # 1. Existing PostgreSQL Database
+  # 1. PostgreSQL Database
   db:
     image: postgres:15
     container_name: teamflow_db
@@ -25,6 +25,36 @@ services:
     volumes:
       - redis_data:/data
 
+  # 3. FastAPI Application
+  app:
+    build: .
+    container_name: teamflow_app
+    restart: always
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+
+  # 4. Celery Worker
+  worker:
+    build: .
+    container_name: teamflow_worker
+    restart: always
+    command: celery -A worker worker --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+
 volumes:
   postgres_data:
-  redis_data: 
+  redis_data:
