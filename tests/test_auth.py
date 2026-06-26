@@ -1,11 +1,9 @@
 import time
-
-
 def unique_email(prefix):
     return f"{prefix}_{int(time.time() * 1000)}@gmail.com"
 
 
-# ---------------- REGISTER 
+#REGISTER 
 def test_register_user(client):
     email = unique_email("almas")
 

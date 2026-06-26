@@ -1,7 +1,10 @@
 import sys
 import os
 import pytest
+import pytest_asyncio
+import redis.asyncio as redis
 from fastapi.testclient import TestClient
+from fastapi_limiter import FastAPILimiter
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -18,6 +21,15 @@ engine = create_engine(
 )
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Fixture for Redis Rate Limiter
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def setup_limiter():
+    redis_connection = redis.from_url("redis://localhost:6380/0", encoding="utf-8", decode_responses=True)
+    await FastAPILimiter.init(redis_connection)
+    yield
+    #await redis_connection.close()
+    await redis_connection.aclose()
 
 # Fixture to clear and recreate DB before every test
 @pytest.fixture(scope="function", autouse=True)

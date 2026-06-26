@@ -1,15 +1,22 @@
 import os
+import time
 import redis.asyncio as redis
 from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
+from loguru import logger
 
 from core.config import settings
 from apis.base import api_router
 from repositories.user import UserRepository
 from db.models.user import User
+
+# logs folder creation
+if not os.path.exists("logs"):
+    os.makedirs("logs")
+logger.add("logs/app.log", rotation="10 MB", level="INFO")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -50,6 +57,20 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+    return response
+
+# logging middleware to log incoming requests and their responses
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    
+    logger.info(f"Incoming Request: {request.method} {request.url}")
+    
+    response = await call_next(request)
+    
+    process_time = time.time() - start_time
+    logger.info(f"Request completed: {request.method} {request.url} - Status: {response.status_code} - Time: {process_time:.4f}s")
+    
     return response
 
 app.include_router(api_router)
