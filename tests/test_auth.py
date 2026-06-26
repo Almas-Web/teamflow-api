@@ -1,59 +1,48 @@
+import pytest
 import time
+
 def unique_email(prefix):
     return f"{prefix}_{int(time.time() * 1000)}@gmail.com"
 
-
-#REGISTER 
-def test_register_user(client):
+@pytest.mark.asyncio
+async def test_register_user(client):
     email = unique_email("almas")
-
-    response = client.post("/users", json={
+    
+    response = await client.post("/users/", json={
         "name": "Almas",
         "email": email,
         "password": "1234"
     })
-
     assert response.status_code in [200, 201]
     assert response.json()["email"] == email
 
-
-# ---------------- LOGIN 
-def test_login_user(client):
+@pytest.mark.asyncio
+async def test_login_user(client):
     email = unique_email("login")
+    password = "123456"
 
-    client.post("/users", json={
-        "name": "Login Test",
-        "email": email,
-        "password": "123456"
-    })
+    
+    await client.post("/users/", json={"name": "Login Test", "email": email, "password": password})
 
-    response = client.post("/users/token", data={
+    response = await client.post("/users/token", data={
         "username": email,
-        "password": "123456"
+        "password": password
     })
-
+    
     assert response.status_code == 200
     assert "access_token" in response.json()
 
-
-# ---------------- PROTECTED
-def test_protected_route(client):
+@pytest.mark.asyncio
+async def test_protected_route(client):
     email = unique_email("protected")
+    password = "123456"
 
-    client.post("/users", json={
-        "name": "Protected",
-        "email": email,
-        "password": "123456"
-    })
+    await client.post("/users/", json={"name": "Protected", "email": email, "password": password})
 
-    login = client.post("/users/token", data={
-        "username": email,
-        "password": "123456"
-    })
-
+    login = await client.post("/users/token", data={"username": email, "password": password})
     token = login.json()["access_token"]
 
-    response = client.get(
+    response = await client.get(
         "/protected",
         headers={"Authorization": f"Bearer {token}"}
     )
