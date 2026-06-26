@@ -12,6 +12,8 @@ from core.config import settings
 from apis.base import api_router
 from repositories.user import UserRepository
 from db.models.user import User
+from core.exceptions import global_exception_handler
+from fastapi import HTTPException
 
 # logs folder creation
 if not os.path.exists("logs"):
@@ -35,6 +37,10 @@ app = FastAPI(
     version=settings.PROJECT_VERSION,
     lifespan=lifespan
 )
+#exception handler
+@app.exception_handler(Exception)
+async def custom_exception_handler(request: Request, exc: Exception):
+    return await global_exception_handler(request, exc)
 
 origins = [
     "http://localhost:3000",
@@ -90,3 +96,4 @@ async def protected_route(
 @app.get("/test-limit", dependencies=[Depends(RateLimiter(times=2, seconds=60))])
 def test_limit():
     return {"msg": "This is rate limited"}
+
