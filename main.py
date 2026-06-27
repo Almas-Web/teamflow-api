@@ -35,7 +35,18 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
-    lifespan=lifespan
+    lifespan=lifespan,
+    description="""
+A modern and secure backend service for project management platforms. 
+Built with FastAPI, PostgreSQL, and Redis to ensure high performance and scalability.
+
+### Key Features:
+* **Authentication:** Secure JWT-based registration and login system.
+* **Workspaces:** Efficient team workspace and project management.
+* **Rate Limiting:** Protects endpoints from abuse using Redis.
+""",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 #exception handler
 @app.exception_handler(Exception)
