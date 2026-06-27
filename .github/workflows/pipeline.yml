@@ -24,6 +24,10 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis
+        ports:
+          - 6380:6379
 
     steps:
       - uses: actions/checkout@v3
@@ -31,7 +35,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: '3.11'
       
       - name: Install dependencies
         run: |
@@ -47,5 +51,6 @@ jobs:
           POSTGRES_SERVER: localhost
           POSTGRES_PORT: 5435
           POSTGRES_DB: teamflow_db
+          REDIS_URL: redis://localhost:6380/0
         run: |
           pytest
