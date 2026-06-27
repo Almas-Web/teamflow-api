@@ -24,3 +24,4 @@ fastapi-mail
 fastapi-limiter==0.1.6
 httpx
 loguru==0.7.3
+gunicorn
