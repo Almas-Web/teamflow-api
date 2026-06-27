@@ -42,5 +42,10 @@ jobs:
       - name: Run Tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5435/teamflow_db
+        POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_SERVER: localhost
+          POSTGRES_PORT: 5435
+          POSTGRES_DB: teamflow_db
         run: |
           pytest
