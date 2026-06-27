@@ -22,14 +22,17 @@ logger.add("logs/app.log", rotation="10 MB", level="INFO")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Redis connection
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6380/0")
-    try:
-        redis_connection = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-        await FastAPILimiter.init(redis_connection)
-        print("--- Redis Connected & FastAPILimiter Initialized ---")
-    except Exception as e:
-        print(f"--- FAILED TO CONNECT TO REDIS: {e} ---")
+    # Startup: Redis connection 
+    if not os.getenv("TESTING"):
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6380/0")
+        try:
+            redis_connection = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+            await FastAPILimiter.init(redis_connection)
+            print("--- Redis Connected & FastAPILimiter Initialized ---")
+        except Exception as e:
+            print(f"--- FAILED TO CONNECT TO REDIS: {e} ---")
+    else:
+        print("--- Running in Testing Mode: Redis & FastAPILimiter Disabled ---")
     yield
 
 app = FastAPI(
@@ -48,7 +51,8 @@ Built with FastAPI, PostgreSQL, and Redis to ensure high performance and scalabi
     docs_url="/docs",
     redoc_url="/redoc"
 )
-#exception handler
+
+# Exception handler
 @app.exception_handler(Exception)
 async def custom_exception_handler(request: Request, exc: Exception):
     return await global_exception_handler(request, exc)
@@ -76,7 +80,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
     return response
 
-# logging middleware to log incoming requests and their responses
+# Logging middleware to log incoming requests and their responses
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.time()
@@ -107,4 +111,3 @@ async def protected_route(
 @app.get("/test-limit", dependencies=[Depends(RateLimiter(times=2, seconds=60))])
 def test_limit():
     return {"msg": "This is rate limited"}
-

@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_SERVER: str = "localhost"
-    POSTGRES_PORT: str = "5432"
+    POSTGRES_PORT: str = "5435"
     POSTGRES_DB: str = "teamflow_db"
 
     SECRET_KEY: str = "supersecretkey"
