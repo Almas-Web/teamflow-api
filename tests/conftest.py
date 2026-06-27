@@ -28,7 +28,6 @@ async def dummy_callback(request: Request, response: Response, pexpire: int):
 async def setup_limiter():
     mock_redis = AsyncMock()
     
-    # FastAPILimiter ইনিশিয়ালাইজ করা
     await FastAPILimiter.init(
         mock_redis, 
         identifier=dummy_identifier, 
@@ -37,7 +36,7 @@ async def setup_limiter():
     
     yield
     
-    # রিসেট করা
+   
     FastAPILimiter.redis = None
 
 # DB Setup Fixture
@@ -59,7 +58,7 @@ def override_db_dependency():
     
     app.dependency_overrides[get_db] = override_get_db
     yield
-    app.dependency_overrides.clear() # টেস্ট শেষে ওভাররাইড ক্লিয়ার করা জরুরি
+    app.dependency_overrides.clear() 
 
 # Async Client Fixture
 @pytest_asyncio.fixture
