@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: teamflow-api
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      
+      - key: DATABASE_URL
+        fromService:
+          type: postgres
+          name: mysqldb
+          envVar: CONNECTION_STRING
+      
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: myredis
+          envVar: REDIS_URL
+      
+      - key: SECRET_KEY
+        value: "supersecretkey123"
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "50"
+      - key: REFRESH_TOKEN_EXPIRE_MINUTES
+        value: "150"
+      - key: JWT_ALGORITHM
+        value: "HS256"
+      - key: EMAIL_PROVIDER
+        value: "gmail"
+      - key: SENDER_EMAIL
+        value: "almashossen67@gmail.com"
+      - key: EMAIL_PASSWORD
+        value: "xfuxvcdnuymwrfbh"
+
+  - type: postgres
+    name: mysqldb
+    databaseName: teamflow_db
+    user: postgres
+    plan: free
+
+  - type: redis
+    name: myredis
+    plan: free
